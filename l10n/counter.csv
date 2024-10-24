@@ -1,0 +1,8 @@
+key,de-DE,en-US
+server.config.name.system.counter,Zähler,Counter
+server.config.parameter.system.counter.object_types.label,Objekttypen,Object types
+server.config.parameter.system.counter.object_types.name.label,Name des Objekttyps,Object type name
+server.config.parameter.system.counter.object_types.nested_fields.label,Übergeordnete Wiederholfelder,Parent nested fields
+server.config.parameter.system.counter.object_types.nested_fields.field_path.label,Pfad zum übergeordneten Feld,Path to parent field
+server.config.parameter.system.counter.object_types.nested_fields.counter_field_name.label,Name des Zählerfeldes,Counter field name
+server.config.parameter.system.counter.object_types.nested_fields.base_fields.label,Namen der Basisfelder,Base field names

@@ -1,0 +1,62 @@
+plugin:
+  name: counter
+  version: 1.0
+  displayname:
+    de-DE: Zähler
+    en-US: Counter
+  info:
+    de-DE: Zähler
+    en-US: Counter
+  server:
+    api-version:
+      require: 1
+  l10n: l10n/counter.csv
+
+base_config:
+  - name: counter
+    parameters:
+      object_types:
+        type: table
+        fields:
+        - name: name
+          type: text
+          position: 0
+        - name: nested_fields
+          type: table
+          fields:
+            - name: field_path
+              type: text
+              position: 0
+            - name: counter_field_name
+              type: text
+              position: 1
+            - name: base_fields
+              type: table
+              fields:
+                - name: field_name
+                  type: text
+                  position: 0
+              position: 2
+          position: 1
+        position: 0
+
+callbacks:
+  db_pre_save:
+    steps:
+      - name: "Set values in counter fields"
+        callback: setCounterValues
+    callbacks:
+      setCounterValues:
+        exec:
+          service: "node"
+          commands:
+            - prog: "node"
+              stdin:
+                type: body
+              stdout:
+                type: body
+              args:
+                - type: "value"
+                  value: "%_exec.pluginDir%/server/setCounterValues.js"
+                - type: "value"
+                  value: "%info.json%"
