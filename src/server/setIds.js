@@ -30,7 +30,7 @@ process.stdin.on('end', async () => {
 });
 
 function getPluginConfiguration(data) {
-    return data.info.config.plugin['counter'].config.counter;
+    return data.info.config.plugin['numeric-id-auto-incrementer'].config.numericIdAutoIncrementer;
 }
 
 async function processObject(object, configuration) {
@@ -58,12 +58,12 @@ async function processNestedFields(object, nestedFieldConfiguration) {
     let changed = false;
 
     for (let nestedField of nestedFields) {
-        if (await addCounterValue(
+        if (await addId(
             object._objecttype,
             nestedFields,
             nestedField,
             nestedFieldConfiguration.field_path,
-            nestedFieldConfiguration.counter_field_name,
+            nestedFieldConfiguration.id_field_name,
             nestedFieldConfiguration.base_fields?.map(field => field.field_name),
         )) changed = true;
     }
@@ -89,55 +89,55 @@ function getFieldValues(object, fieldPath) {
     }
 }
 
-async function addCounterValue(objectType, nestedFields, nestedField, nestedFieldPath, counterFieldName, baseFieldNames) {
-    if (!counterFieldName?.length
+async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames) {
+    if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
-        || nestedField[counterFieldName]) return false;
+        || nestedField[idFieldName]) return false;
 
-    nestedField[counterFieldName] = await getCounterValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, counterFieldName, baseFieldNames
+    nestedField[idFieldName] = await getIdValue(
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
     );
 
     return true;
 }
 
-async function getCounterValue(objectType, nestedFields, nestedField, nestedFieldPath, counterFieldName, baseFieldNames) {
-    const existingCounterValues = await findExistingCounterValues(
-        objectType, nestedFields, nestedField, nestedFieldPath, counterFieldName, baseFieldNames
+async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames) {
+    const existingIdValues = await findExistingIdValues(
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
     );
-    existingCounterValues.sort();
+    existingIdValues.sort();
 
-    return existingCounterValues.length
-        ? existingCounterValues.pop() + 1
+    return existingIdValues.length
+        ? existingIdValues.pop() + 1
         : 1;
 }
 
-async function findExistingCounterValues(objectType, nestedFields, nestedField, nestedFieldPath, counterFieldName,
-                                         baseFieldNames) {
-    const counterValuesInCurrentObject = findExistingCounterValuesInNestedFields(
-        nestedFields, nestedField, counterFieldName, baseFieldNames
+async function findExistingIdValues(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName,
+                                    baseFieldNames) {
+    const idValuesInCurrentObject = findExistingIdValuesInNestedFields(
+        nestedFields, nestedField, idFieldName, baseFieldNames
     );
-    const counterValuesInOtherObjects = await findExistingCounterValuesInOtherObjects(
-        objectType, nestedField, nestedFieldPath, counterFieldName, baseFieldNames
+    const idValuesInOtherObjects = await findExistingIdValuesInOtherObjects(
+        objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames
     );
     
-    return counterValuesInCurrentObject.concat(counterValuesInOtherObjects)
+    return idValuesInCurrentObject.concat(idValuesInOtherObjects)
         .filter(value => value);
 }
 
-function findExistingCounterValuesInNestedFields(nestedFields, nestedField, counterFieldName, baseFieldNames) {
+function findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldName, baseFieldNames) {
     for (let baseFieldName of baseFieldNames) {
         nestedFields = nestedFields.filter(field => {
             return getBaseFieldValue(field, baseFieldName) === getBaseFieldValue(nestedField, baseFieldName);
         });
     }
     
-    return nestedFields.map(field => field[counterFieldName])
+    return nestedFields.map(field => field[idFieldName])
 }
 
-async function findExistingCounterValuesInOtherObjects(objectType, nestedField, nestedFieldPath, counterFieldName,
-                                                       baseFieldNames) {
+async function findExistingIdValuesInOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName,
+                                                  baseFieldNames) {
     const url = info.api_url + '/api/v1/search?access_token=' + info.api_user_access_token;
     const searchRequest = {
         search: baseFieldNames.map(baseFieldName => {
@@ -148,7 +148,7 @@ async function findExistingCounterValuesInOtherObjects(objectType, nestedField, 
                 string: getBaseFieldValue(nestedField, baseFieldName)
             };
         }),
-        include_fields: [objectType + '.' + nestedFieldPath + '.' + counterFieldName].concat(
+        include_fields: [objectType + '.' + nestedFieldPath + '.' + idFieldName].concat(
             baseFieldNames.map(baseFieldName => getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName))
         )
     };
@@ -164,10 +164,10 @@ async function findExistingCounterValuesInOtherObjects(objectType, nestedField, 
         const result = await response.json();
 
         return result.objects.reduce((result, object) => {
-            const counterValues = findExistingCounterValuesInNestedFields(
-                getFieldValues(object[objectType], nestedFieldPath), nestedField, counterFieldName, baseFieldNames
+            const idValues = findExistingIdValuesInNestedFields(
+                getFieldValues(object[objectType], nestedFieldPath), nestedField, idFieldName, baseFieldNames
             );
-            return result.concat(counterValues);
+            return result.concat(idValues);
         }, []);
     } catch (err) {
         throwErrorToFrontend('Search request failed', JSON.stringify(err));
@@ -198,7 +198,7 @@ function isDanteConcept(fieldValue) {
 function throwErrorToFrontend(error, description) {
     console.log(JSON.stringify({
         error: {
-            code: 'error.counter',
+            code: 'error.numericIdAutoIncrementer',
             statuscode: 400,
             realm: 'api',
             error,

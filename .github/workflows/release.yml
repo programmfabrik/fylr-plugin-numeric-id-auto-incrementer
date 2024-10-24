@@ -24,7 +24,7 @@ jobs:
         shell: bash
 
       - name: Set zip file name
-        run: echo "ZIP_NAME=Counter.zip" >> $GITHUB_ENV
+        run: echo "ZIP_NAME=NumericIdAutoIncrementer.zip" >> $GITHUB_ENV
 
       - name: Build and Package
         shell: bash

@@ -1,7 +1,7 @@
-PLUGIN_NAME = counter
-ZIP_NAME = "Counter.zip"
+PLUGIN_NAME = numeric-id-auto-incrementer
+ZIP_NAME = "NumericIdAutoIncrementer.zip"
 
-SERVER_FILE = setCounterValues.js
+SERVER_FILE = setIds.js
 
 all: build zip
 

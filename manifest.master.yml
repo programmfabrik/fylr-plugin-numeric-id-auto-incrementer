@@ -1,19 +1,16 @@
 plugin:
-  name: counter
+  name: numeric-id-auto-incrementer
   version: 1.0
   displayname:
-    de-DE: Zähler
-    en-US: Counter
-  info:
-    de-DE: Zähler
-    en-US: Counter
+    de-DE: Automatische Inkrementierung numerischer IDs
+    en-US: Numeric id auto incrementer
   server:
     api-version:
       require: 1
-  l10n: l10n/counter.csv
+  l10n: l10n/numeric-id-auto-incrementer.csv
 
 base_config:
-  - name: counter
+  - name: numericIdAutoIncrementer
     parameters:
       object_types:
         type: table
@@ -27,7 +24,7 @@ base_config:
             - name: field_path
               type: text
               position: 0
-            - name: counter_field_name
+            - name: id_field_name
               type: text
               position: 1
             - name: base_fields
@@ -43,10 +40,10 @@ base_config:
 callbacks:
   db_pre_save:
     steps:
-      - name: "Set values in counter fields"
-        callback: setCounterValues
+      - name: "Set values in ID fields"
+        callback: setIds
     callbacks:
-      setCounterValues:
+      setIds:
         exec:
           service: "node"
           commands:
@@ -57,6 +54,6 @@ callbacks:
                 type: body
               args:
                 - type: "value"
-                  value: "%_exec.pluginDir%/server/setCounterValues.js"
+                  value: "%_exec.pluginDir%/server/setIds.js"
                 - type: "value"
                   value: "%info.json%"
