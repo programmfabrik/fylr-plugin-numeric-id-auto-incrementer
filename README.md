@@ -1,3 +1,9 @@
+> This Plugin / Repo is being maintained by a community of developers.
+There is no warranty given or bug fixing guarantee; especially not by
+Programmfabrik GmbH. Please use the GitHub issue tracking to report bugs
+and self organize bug fixing. Feel free to directly contact the committing
+developers.
+
 # Counter plugin
 
 This server plugin allows automatically setting the values of numeric counter fields when saving data. Counter field values are calculated based on the unique combination of values entered in a defined set of base fields. Please note that the counter field as well as all base fields are expected to be grouped inside the same nested field.
