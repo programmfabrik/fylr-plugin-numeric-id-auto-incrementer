@@ -22,7 +22,7 @@ All plugin configuration takes place in base configuration.
     * *Object type name*: The name of the object type for which to set up ID generation
     * *Parent nested fields*:
         * *Path to parent field*: The path to the nested field that contains the ID field and the base fields.
-        * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty and if all base fields have been filled out by the user.
+        * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty, if the parent field has been newly created and if all base fields have been filled out by the user.
         * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).
 
 ## Example

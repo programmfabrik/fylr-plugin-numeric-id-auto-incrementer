@@ -93,7 +93,8 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
-        || nestedField[idFieldName]) return false;
+        || nestedField[idFieldName]
+        || nestedField._uuid) return false;
 
     nestedField[idFieldName] = await getIdValue(
         objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
