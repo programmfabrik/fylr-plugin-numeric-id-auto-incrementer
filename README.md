@@ -10,7 +10,7 @@ This server plugin for [fylr](https://docs.fylr.io) allows automatically setting
 
 ## Installation
 
-The latest version of this plugin can be found [here](https://github.com/programmfabrik/numeric-id-auto-incrementer/releases/latest/download/NumericIdAutoIncrementer.zip).
+The latest version of this plugin can be found [here](https://github.com/programmfabrik/fylr-plugin-numeric-id-auto-incrementer/releases/latest/download/NumericIdAutoIncrementer.zip).
 
 The ZIP can be downloaded and installed using the plugin manager, or used directly (recommended).
 
