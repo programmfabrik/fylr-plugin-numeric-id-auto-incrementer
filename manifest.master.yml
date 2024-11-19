@@ -1,6 +1,6 @@
 plugin:
   name: numeric-id-auto-incrementer
-  version: 1.0
+  version: 1.1
   displayname:
     de-DE: Automatische Inkrementierung numerischer IDs
     en-US: Numeric id auto incrementer
