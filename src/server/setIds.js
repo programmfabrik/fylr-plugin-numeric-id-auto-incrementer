@@ -139,7 +139,19 @@ function findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldNa
 
 async function findExistingIdValuesInOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName,
                                                   baseFieldNames) {
+    const objects = await findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames);
+
+    return objects.reduce((result, object) => {
+        const idValues = findExistingIdValuesInNestedFields(
+            getFieldValues(object[objectType], nestedFieldPath), nestedField, idFieldName, baseFieldNames
+        );
+        return result.concat(idValues);
+    }, []);
+}
+
+async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, offset = 0) {
     const url = info.api_url + '/api/v1/search?access_token=' + info.api_user_access_token;
+    const chunkSize = 100;
     const searchRequest = {
         search: baseFieldNames.map(baseFieldName => {
             return {
@@ -151,7 +163,9 @@ async function findExistingIdValuesInOtherObjects(objectType, nestedField, neste
         }),
         include_fields: [objectType + '.' + nestedFieldPath + '.' + idFieldName].concat(
             baseFieldNames.map(baseFieldName => getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName))
-        )
+        ),
+        limit: chunkSize,
+        offset
     };
 
     try {
@@ -163,13 +177,12 @@ async function findExistingIdValuesInOtherObjects(objectType, nestedField, neste
             body: JSON.stringify(searchRequest)
         });
         const result = await response.json();
-
-        return result.objects.reduce((result, object) => {
-            const idValues = findExistingIdValuesInNestedFields(
-                getFieldValues(object[objectType], nestedFieldPath), nestedField, idFieldName, baseFieldNames
-            );
-            return result.concat(idValues);
-        }, []);
+        return result.count > searchRequest.limit + offset
+            ? result.objects.concat(
+                await findOtherObjects(
+                    objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, offset + chunkSize
+                )
+            ) : result.objects;
     } catch (err) {
         throwErrorToFrontend('Search request failed', JSON.stringify(err));
     }
