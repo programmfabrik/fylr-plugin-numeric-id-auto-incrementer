@@ -107,7 +107,7 @@ async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath
     const existingIdValues = await findExistingIdValues(
         objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
     );
-    existingIdValues.sort();
+    existingIdValues.sort((value1, value2) => value1 - value2);
 
     return existingIdValues.length
         ? existingIdValues.pop() + 1
