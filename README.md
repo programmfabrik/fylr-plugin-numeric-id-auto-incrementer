@@ -24,7 +24,7 @@ All plugin configuration takes place in base configuration.
         * *Path to parent field*: The path to the nested field that contains the ID field and the base fields.
         * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty, if the parent field has been newly created and if all base fields have been filled out by the user.
         * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).
-        * *IDs of pools to consider*: If not empty, IDs are only updated for resources in the specified pools. Also, resources in other pools are not considered during ID generation.
+        * *IDs of pools to consider*: If not empty, IDs are only updated for resources in the specified pools (and their child pools). Also, resources in other pools are not considered during ID generation.
 
 ## Example
 

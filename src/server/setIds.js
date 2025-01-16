@@ -38,8 +38,7 @@ async function processObject(object, configuration) {
     let changed = false;
 
     for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
-        const poolIds = nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id);
-        if (poolIds?.length && !poolIds.includes(object[object._objecttype]._pool.pool._id.toString())) continue;
+        if (!isInConfiguredPool(object, nestedFieldConfiguration)) continue;
         if (await processNestedFields(object, nestedFieldConfiguration)) changed = true;
     }
 
@@ -50,6 +49,16 @@ function getNestedFieldsConfiguration(configuration, objectType) {
     return configuration.object_types
         ?.find(configuration => configuration.name === objectType)
         ?.nested_fields ?? [];
+}
+
+function isInConfiguredPool(object, nestedFieldConfiguration) {
+    const poolIds = nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id);
+    if (!poolIds?.length) return true;
+    
+    for (let objectPool of object[object._objecttype]._pool._path) {
+        if (poolIds.includes(objectPool.pool._id.toString())) return true;
+    }
+    return false;
 }
 
 async function processNestedFields(object, nestedFieldConfiguration) {
@@ -166,7 +175,7 @@ async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFiel
         query.push({
             type: 'in',
             bool: 'must',
-            fields: [objectType + '._pool.pool._id'],
+            fields: [objectType + '._pool._path.pool._id'],
             in: poolIds
         });
     }
