@@ -34,6 +34,13 @@ base_config:
                   type: text
                   position: 0
               position: 2
+            - name: pool_ids
+              type: table
+              fields:
+                - name: pool_id
+                  type: text
+                  position: 0
+              position: 3
           position: 1
         position: 0
 

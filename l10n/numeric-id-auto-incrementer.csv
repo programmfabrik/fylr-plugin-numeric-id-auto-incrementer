@@ -6,3 +6,4 @@ server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fiel
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.field_path.label,Pfad zum übergeordneten Feld,Path to parent field
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.id_field_name.label,Name des ID-Feldes,ID field name
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.base_fields.label,Namen der Basisfelder,Base field names
+server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.pool_ids.label,IDs der berücksichtigten Pools,IDs of pools to consider

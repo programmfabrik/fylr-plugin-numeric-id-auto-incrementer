@@ -38,6 +38,8 @@ async function processObject(object, configuration) {
     let changed = false;
 
     for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
+        const poolIds = nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id);
+        if (poolIds?.length && !poolIds.includes(object[object._objecttype]._pool.pool._id.toString())) continue;
         if (await processNestedFields(object, nestedFieldConfiguration)) changed = true;
     }
 
@@ -65,6 +67,7 @@ async function processNestedFields(object, nestedFieldConfiguration) {
             nestedFieldConfiguration.field_path,
             nestedFieldConfiguration.id_field_name,
             nestedFieldConfiguration.base_fields?.map(field => field.field_name),
+            nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id)
         )) changed = true;
     }
 
@@ -89,7 +92,7 @@ function getFieldValues(object, fieldPath) {
     }
 }
 
-async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames) {
+async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
@@ -97,15 +100,15 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
         || nestedField._uuid) return false;
 
     nestedField[idFieldName] = await getIdValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
     );
 
     return true;
 }
 
-async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames) {
+async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds) {
     const existingIdValues = await findExistingIdValues(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
     );
     existingIdValues.sort((value1, value2) => value1 - value2);
 
@@ -115,12 +118,12 @@ async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath
 }
 
 async function findExistingIdValues(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName,
-                                    baseFieldNames) {
+                                    baseFieldNames, poolIds) {
     const idValuesInCurrentObject = findExistingIdValuesInNestedFields(
         nestedFields, nestedField, idFieldName, baseFieldNames
     );
     const idValuesInOtherObjects = await findExistingIdValuesInOtherObjects(
-        objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames
+        objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
     );
     
     return idValuesInCurrentObject.concat(idValuesInOtherObjects)
@@ -138,8 +141,8 @@ function findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldNa
 }
 
 async function findExistingIdValuesInOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName,
-                                                  baseFieldNames) {
-    const objects = await findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames);
+                                                  baseFieldNames, poolIds) {
+    const objects = await findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds);
 
     return objects.reduce((result, object) => {
         const idValues = findExistingIdValuesInNestedFields(
@@ -149,18 +152,27 @@ async function findExistingIdValuesInOtherObjects(objectType, nestedField, neste
     }, []);
 }
 
-async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, offset = 0) {
+async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, offset = 0) {
     const url = info.api_url + '/api/v1/search?access_token=' + info.api_user_access_token;
+    const query = baseFieldNames.map(baseFieldName => {
+        return {
+            type: 'match',
+            bool: 'must',
+            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
+            string: getBaseFieldValue(nestedField, baseFieldName)
+        };
+    });
+    if (poolIds?.length) {
+        query.push({
+            type: 'in',
+            bool: 'must',
+            fields: [objectType + '._pool.pool._id'],
+            in: poolIds
+        });
+    }
     const chunkSize = 100;
     const searchRequest = {
-        search: baseFieldNames.map(baseFieldName => {
-            return {
-                type: 'match',
-                bool: 'must',
-                fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
-                string: getBaseFieldValue(nestedField, baseFieldName)
-            };
-        }),
+        search: query,
         include_fields: [objectType + '.' + nestedFieldPath + '.' + idFieldName].concat(
             baseFieldNames.map(baseFieldName => getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName))
         ),
