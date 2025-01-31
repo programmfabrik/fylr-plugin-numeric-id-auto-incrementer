@@ -16,9 +16,10 @@ process.stdin.on('end', async () => {
     const data = JSON.parse(input);
     const configuration = getPluginConfiguration(data);
     const changedObjects = [];
+    const addedIds = {};
 
     for (let object of data.objects) {
-        if (await processObject(object, configuration)) changedObjects.push(object);
+        if (await processObject(object, configuration, addedIds)) changedObjects.push(object);
     }
 
     console.log(JSON.stringify({ objects: changedObjects }));
@@ -33,13 +34,13 @@ function getPluginConfiguration(data) {
     return data.info.config.plugin['numeric-id-auto-incrementer'].config.numericIdAutoIncrementer;
 }
 
-async function processObject(object, configuration) {
+async function processObject(object, configuration, addedIds) {
     const nestedFieldsConfiguration = getNestedFieldsConfiguration(configuration, object._objecttype);
     let changed = false;
 
     for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
         if (!isInConfiguredPool(object, nestedFieldConfiguration)) continue;
-        if (await processNestedFields(object, nestedFieldConfiguration)) changed = true;
+        if (await processNestedFields(object, nestedFieldConfiguration, addedIds)) changed = true;
     }
 
     return changed;
@@ -61,7 +62,7 @@ function isInConfiguredPool(object, nestedFieldConfiguration) {
     return false;
 }
 
-async function processNestedFields(object, nestedFieldConfiguration) {
+async function processNestedFields(object, nestedFieldConfiguration, addedIds) {
     const nestedFields = getFieldValues(
         object[object._objecttype],
         nestedFieldConfiguration.field_path
@@ -76,7 +77,8 @@ async function processNestedFields(object, nestedFieldConfiguration) {
             nestedFieldConfiguration.field_path,
             nestedFieldConfiguration.id_field_name,
             nestedFieldConfiguration.base_fields?.map(field => field.field_name),
-            nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id)
+            nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id),
+            addedIds
         )) changed = true;
     }
 
@@ -101,23 +103,27 @@ function getFieldValues(object, fieldPath) {
     }
 }
 
-async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds) {
+async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
         || nestedField[idFieldName]
         || nestedField._uuid) return false;
 
-    nestedField[idFieldName] = await getIdValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
+    const newId = await getIdValue(
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
     );
+
+    nestedField[idFieldName] = newId;
+    if (!addedIds[objectType + '.' + nestedFieldPath]) addedIds[objectType + '.' + nestedFieldPath] = [];
+    addedIds[objectType + '.' + nestedFieldPath].push(newId);
 
     return true;
 }
 
-async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds) {
+async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds) {
     const existingIdValues = await findExistingIdValues(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
     );
     existingIdValues.sort((value1, value2) => value1 - value2);
 
@@ -127,7 +133,7 @@ async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath
 }
 
 async function findExistingIdValues(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName,
-                                    baseFieldNames, poolIds) {
+                                    baseFieldNames, poolIds, addedIds) {
     const idValuesInCurrentObject = findExistingIdValuesInNestedFields(
         nestedFields, nestedField, idFieldName, baseFieldNames
     );
@@ -135,7 +141,7 @@ async function findExistingIdValues(objectType, nestedFields, nestedField, neste
         objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
     );
     
-    return idValuesInCurrentObject.concat(idValuesInOtherObjects)
+    return idValuesInCurrentObject.concat(idValuesInOtherObjects).concat(addedIds[objectType + '.' + nestedFieldPath])
         .filter(value => value);
 }
 
