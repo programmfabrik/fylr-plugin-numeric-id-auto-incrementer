@@ -207,7 +207,7 @@ async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFiel
         return result.count > searchRequest.limit + offset
             ? result.objects.concat(
                 await findOtherObjects(
-                    objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, offset + chunkSize
+                    objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, offset + chunkSize
                 )
             ) : result.objects;
     } catch (err) {
