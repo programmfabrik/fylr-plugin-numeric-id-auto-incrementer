@@ -1,6 +1,6 @@
 plugin:
   name: numeric-id-auto-incrementer
-  version: 1.2.3
+  version: 1.2.4
   url: https://github.com/programmfabrik/fylr-plugin-numeric-id-auto-incrementer
   displayname:
     de-DE: Automatische Inkrementierung numerischer IDs
