@@ -36,11 +36,15 @@ function getPluginConfiguration(data) {
 
 async function processObject(object, configuration, addedIds) {
     const nestedFieldsConfiguration = getNestedFieldsConfiguration(configuration, object._objecttype);
+    const indexerSettings = {
+        maxNotIndexed: configuration.max_not_indexed,
+        errorMessage: configuration.indexer_error_message
+    };
     let changed = false;
 
     for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
         if (!isInConfiguredPool(object, nestedFieldConfiguration)) continue;
-        if (await processNestedFields(object, nestedFieldConfiguration, addedIds)) changed = true;
+        if (await processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds)) changed = true;
     }
 
     return changed;
@@ -62,7 +66,7 @@ function isInConfiguredPool(object, nestedFieldConfiguration) {
     return false;
 }
 
-async function processNestedFields(object, nestedFieldConfiguration, addedIds) {
+async function processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds) {
     const nestedFields = getFieldValues(
         object[object._objecttype],
         nestedFieldConfiguration.field_path
@@ -78,6 +82,7 @@ async function processNestedFields(object, nestedFieldConfiguration, addedIds) {
             nestedFieldConfiguration.id_field_name,
             nestedFieldConfiguration.base_fields?.map(field => field.field_name),
             nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id),
+            indexerSettings,
             addedIds
         )) changed = true;
     }
@@ -103,7 +108,7 @@ function getFieldValues(object, fieldPath) {
     }
 }
 
-async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds) {
+async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
@@ -111,7 +116,7 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
         || nestedField._uuid) return false;
 
     const newId = await getIdValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds
     );
 
     nestedField[idFieldName] = newId;
@@ -121,7 +126,8 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
     return true;
 }
 
-async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds) {
+async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
+    await assertIndexerIsFree(indexerSettings);
     const existingIdValues = await findExistingIdValues(
         objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
     );
@@ -211,7 +217,7 @@ async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFiel
                 )
             ) : result.objects;
     } catch (err) {
-        throwErrorToFrontend('Search request failed', JSON.stringify(err));
+        throwErrorToFrontend('Suchanfrage fehlgeschlagen', JSON.stringify(err));
     }
 }
 
@@ -236,12 +242,37 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
-function throwErrorToFrontend(error, description) {
+async function assertIndexerIsFree(indexerSettings) {
+    if (!indexerSettings.maxNotIndexed) return;
+
+    const systemStatusData = await getSystemStatusData();
+    const totalNotIndexed = systemStatusData.Stats.total_not_indexed;
+    
+    if (totalNotIndexed > indexerSettings.maxNotIndexed) {
+        throwErrorToFrontend(indexerSettings.errorMessage, undefined, 'objectNotSaved');
+    }
+}
+
+async function getSystemStatusData() {
+    try {
+        const response = await fetch('http://fylr.localhost:8082/inspect/system/status/', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        return await response.json();
+    } catch (err) {
+        throwErrorToFrontend('Systemstatus konnte nicht abgerufen werden', JSON.stringify(err));
+    }
+}
+
+function throwErrorToFrontend(error, description, realm) {
     console.log(JSON.stringify({
         error: {
             code: 'error.numericIdAutoIncrementer',
             statuscode: 400,
-            realm: 'api',
+            realm: realm ?? 'api',
             error,
             parameters: {},
             description

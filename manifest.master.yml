@@ -44,6 +44,12 @@ base_config:
               position: 3
           position: 1
         position: 0
+      max_not_indexed:
+        type: int
+        position: 1
+      indexer_error_message:
+        type: text
+        position: 2
 
 callbacks:
   db_pre_save:

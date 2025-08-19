@@ -7,3 +7,6 @@ server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fiel
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.id_field_name.label,Name des ID-Feldes,ID field name
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.base_fields.label,Namen der Basisfelder,Base field names
 server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.pool_ids.label,IDs der berücksichtigten Pools,IDs of pools to consider
+server.config.parameter.system.numericIdAutoIncrementer.max_not_indexed.label,Maximale Anzahl nicht indizierter Objekte,Maximum number of non-indexed objects
+server.config.parameter.system.numericIdAutoIncrementer.indexer_error_message.label,Text der Indexer-Fehlermeldung,Text of indexer error message
+base.error.realm.objectNotSaved,Speichern nicht möglich,Saving not possible

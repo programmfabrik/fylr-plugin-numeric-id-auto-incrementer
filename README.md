@@ -25,6 +25,8 @@ All plugin configuration takes place in base configuration.
         * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty, if the parent field has been newly created and if all base fields have been filled out by the user.
         * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).
         * *IDs of pools to consider*: If not empty, IDs are only updated for resources in the specified pools (and their child pools). Also, resources in other pools are not considered during ID generation.
+    * *Maximum number of non-indexed objects*: If not empty, the plugin will check if the indexer is still working by looking at the number of non-indexed objects. If the number is higher than the value specified here and an ID would have to be created, the object will not be saved and an error message will appear instead. This setting can be used to prevent the generation of incorrect IDs in the case of an overloaded indexer.
+    * *Text of indexer error message*: This text is shown as the error message that appears if the maximum number of non-indexed objects is exceeded and the object is not saved.
 
 ## Example
 
