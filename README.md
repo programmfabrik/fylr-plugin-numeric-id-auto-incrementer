@@ -6,7 +6,7 @@ developers.
 
 # Numeric ID auto incrementer plugin
 
-This server plugin for [fylr](https://docs.fylr.io) allows automatically setting the values of numeric ID fields when saving data. IDs are assigned in numerical order starting from 1 for each combination of values present in a defined set of base fields (see example below). Please note that the ID field as well as all base fields are expected to be grouped inside the same nested field.
+This server plugin for [fylr](https://docs.fylr.io) allows automatically setting the values of numeric ID fields when saving data. IDs are assigned in numerical order starting from 1 for each combination of values present in a defined set of base fields (see example below). Please note that the ID field as well as all base fields are expected to be either grouped inside the same nested field or located at the root level of the object.
 
 ## Installation
 
@@ -21,7 +21,7 @@ All plugin configuration takes place in base configuration.
 * *Object types*:
     * *Object type name*: The name of the object type for which to set up ID generation
     * *Parent nested fields*:
-        * *Path to parent field*: The path to the nested field that contains the ID field and the base fields.
+        * *Path to parent field*: The path to the nested field that contains the ID field and the base fields (leave empty if the ID field and the base fields are on the root level of the object).
         * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty, if the parent field has been newly created and if all base fields have been filled out by the user.
         * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).
         * *IDs of pools to consider*: If not empty, IDs are only updated for resources in the specified pools (and their child pools). Also, resources in other pools are not considered during ID generation.
