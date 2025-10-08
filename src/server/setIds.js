@@ -91,14 +91,13 @@ function getNestedFields(object, nestedFieldPath) {
     const objectData = object[object._objecttype];
 
     if (nestedFieldPath?.length) {
-        return getFieldValues(objectData, nestedFieldPath);
+        return getFieldValues(objectData, nestedFieldPath.split('.'));
     } else {
         return [objectData];
     }
 }
 
-function getFieldValues(object, fieldPath) {
-    const pathSegments = fieldPath.split('.');
+function getFieldValues(object, pathSegments) {
     const fieldName = pathSegments.shift();
     const field = object[fieldName];
 
@@ -118,7 +117,7 @@ function getFieldValues(object, fieldPath) {
 async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
     if (!idFieldName?.length
         || !baseFieldNames
-        || baseFieldNames.find(baseFieldName => !nestedField[baseFieldName])
+        || baseFieldNames.find(baseFieldName => !getBaseFieldValue(nestedField, baseFieldName))
         || nestedField[idFieldName]
         || nestedField._uuid) return false;
 
@@ -182,14 +181,7 @@ async function findExistingIdValuesInOtherObjects(objectType, nestedField, neste
 
 async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, offset = 0) {
     const url = info.api_url + '/api/v1/search?access_token=' + info.api_user_access_token;
-    const query = baseFieldNames.map(baseFieldName => {
-        return {
-            type: 'match',
-            bool: 'must',
-            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
-            string: getBaseFieldValue(nestedField, baseFieldName)
-        };
-    });
+    const query = baseFieldNames.map(baseFieldName => getBaseFieldQuery(objectType, nestedField, nestedFieldPath, baseFieldName));
     if (poolIds?.length) {
         query.push({
             type: 'in',
@@ -228,8 +220,23 @@ async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFiel
     }
 }
 
+function getBaseFieldQuery(objectType, nestedField, nestedFieldPath, baseFieldName) {
+    return baseFieldName.endsWith('_uuid')
+        ? {
+            type: 'in',
+            bool: 'must',
+            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
+            in: [getBaseFieldValue(nestedField, baseFieldName)]
+        } : {
+            type: 'match',
+            bool: 'must',
+            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
+            string: getBaseFieldValue(nestedField, baseFieldName)
+        };
+}
+
 function getBaseFieldValue(nestedField, baseFieldName) {
-    const fieldValue = nestedField[baseFieldName];
+    const fieldValue = getFieldValues(nestedField, baseFieldName.split('.'))?.[0];
 
     return isDanteConcept(fieldValue)
         ? fieldValue.conceptURI
