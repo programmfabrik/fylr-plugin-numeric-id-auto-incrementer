@@ -67,12 +67,9 @@ function isInConfiguredPool(object, nestedFieldConfiguration) {
 }
 
 async function processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds) {
-    const nestedFields = getFieldValues(
-        object[object._objecttype],
-        nestedFieldConfiguration.field_path
-    );
-    let changed = false;
+    const nestedFields = getNestedFields(object, nestedFieldConfiguration.field_path);
 
+    let changed = false;
     for (let nestedField of nestedFields) {
         if (await addId(
             object._objecttype,
@@ -88,6 +85,16 @@ async function processNestedFields(object, nestedFieldConfiguration, indexerSett
     }
 
     return changed;
+}
+
+function getNestedFields(object, nestedFieldPath) {
+    const objectData = object[object._objecttype];
+
+    if (nestedFieldPath?.length) {
+        return getFieldValues(objectData, nestedFieldPath);
+    } else {
+        return [objectData];
+    }
 }
 
 function getFieldValues(object, fieldPath) {
@@ -120,8 +127,9 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
     );
 
     nestedField[idFieldName] = newId;
-    if (!addedIds[objectType + '.' + nestedFieldPath]) addedIds[objectType + '.' + nestedFieldPath] = [];
-    addedIds[objectType + '.' + nestedFieldPath].push(newId);
+    const path = objectType + (nestedFieldPath ? '.' + nestedFieldPath : '');
+    if (!addedIds[path]) addedIds[path] = [];
+    addedIds[path].push(newId);
 
     return true;
 }
@@ -158,7 +166,7 @@ function findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldNa
         });
     }
     
-    return nestedFields.map(field => field[idFieldName])
+    return nestedFields.map(field => field[idFieldName]);
 }
 
 async function findExistingIdValuesInOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName,
@@ -166,9 +174,8 @@ async function findExistingIdValuesInOtherObjects(objectType, nestedField, neste
     const objects = await findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds);
 
     return objects.reduce((result, object) => {
-        const idValues = findExistingIdValuesInNestedFields(
-            getFieldValues(object[objectType], nestedFieldPath), nestedField, idFieldName, baseFieldNames
-        );
+        const nestedFields = getNestedFields(object, nestedFieldPath);
+        const idValues = findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldName, baseFieldNames);
         return result.concat(idValues);
     }, []);
 }
@@ -194,7 +201,7 @@ async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFiel
     const chunkSize = 100;
     const searchRequest = {
         search: query,
-        include_fields: [objectType + '.' + nestedFieldPath + '.' + idFieldName].concat(
+        include_fields: ['_objecttype', getFullFieldPath(objectType, nestedField, nestedFieldPath, idFieldName)].concat(
             baseFieldNames.map(baseFieldName => getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName))
         ),
         limit: chunkSize,
@@ -229,15 +236,19 @@ function getBaseFieldValue(nestedField, baseFieldName) {
         : fieldValue;
 }
 
-function getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName) {
-    let result = objectType + '.' + nestedFieldPath + '.' + baseFieldName;
-    if (isDanteConcept(nestedField[baseFieldName])) result += '.conceptURI';
+function getFullFieldPath(objectType, nestedField, nestedFieldPath, fieldName) {
+    let result = objectType + '.'
+        + (nestedFieldPath?.length ? nestedFieldPath + '.' : '')
+        + fieldName;
+    if (isDanteConcept(nestedField[fieldName])) result += '.conceptURI';
 
     return result;
 }
 
 function isDanteConcept(fieldValue) {
-    return typeof fieldValue === 'object'
+    return fieldValue !== undefined
+        && fieldValue !== null
+        && typeof fieldValue === 'object'
         && fieldValue.conceptName !== undefined
         && fieldValue.conceptURI !== undefined;
 }
