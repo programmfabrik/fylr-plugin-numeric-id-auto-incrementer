@@ -36,15 +36,11 @@ function getPluginConfiguration(data) {
 
 async function processObject(object, configuration, addedIds) {
     const nestedFieldsConfiguration = getNestedFieldsConfiguration(configuration, object._objecttype);
-    const indexerSettings = {
-        maxNotIndexed: configuration.max_not_indexed,
-        errorMessage: configuration.indexer_error_message
-    };
     let changed = false;
 
     for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
         if (!isInConfiguredPool(object, nestedFieldConfiguration)) continue;
-        if (await processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds)) changed = true;
+        if (await processNestedFields(object, nestedFieldConfiguration, configuration.indexer_error_message, addedIds)) changed = true;
     }
 
     return changed;
@@ -66,7 +62,7 @@ function isInConfiguredPool(object, nestedFieldConfiguration) {
     return false;
 }
 
-async function processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds) {
+async function processNestedFields(object, nestedFieldConfiguration, indexerErrorMessage, addedIds) {
     const nestedFields = getNestedFields(object, nestedFieldConfiguration.field_path);
 
     let changed = false;
@@ -79,7 +75,7 @@ async function processNestedFields(object, nestedFieldConfiguration, indexerSett
             nestedFieldConfiguration.id_field_name,
             nestedFieldConfiguration.base_fields?.map(field => field.field_name),
             nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id),
-            indexerSettings,
+            indexerErrorMessage,
             addedIds
         )) changed = true;
     }
@@ -114,7 +110,7 @@ function getFieldValues(object, pathSegments) {
     }
 }
 
-async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
+async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerErrorMessage, addedIds) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !getBaseFieldValue(nestedField, baseFieldName))
@@ -122,7 +118,7 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
         || nestedField._uuid) return false;
 
     const newId = await getIdValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds
+        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerErrorMessage, addedIds
     );
 
     nestedField[idFieldName] = newId;
@@ -133,8 +129,8 @@ async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idF
     return true;
 }
 
-async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
-    await assertIndexerIsFree(indexerSettings);
+async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerErrorMessage, addedIds) {
+    await waitForIndexer(indexerErrorMessage);
     const existingIdValues = await findExistingIdValues(
         objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
     );
@@ -260,15 +256,29 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
-async function assertIndexerIsFree(indexerSettings) {
-    if (!indexerSettings.maxNotIndexed) return;
+async function waitForIndexer(errorMessage) {
+    let waitTime = 0;
+    const maxWaitTime = 30000;
 
+    while (await isIndexerBusy()) {
+        await pause(500);
+        waitTime += 500;
+        if (waitTime > maxWaitTime) {
+            throwErrorToFrontend(errorMessage, undefined, 'objectNotSaved');
+            break;
+        }
+    }
+}
+
+async function isIndexerBusy() {
     const systemStatusData = await getSystemStatusData();
     const totalNotIndexed = systemStatusData.Stats.total_not_indexed;
     
-    if (totalNotIndexed > indexerSettings.maxNotIndexed) {
-        throwErrorToFrontend(indexerSettings.errorMessage, undefined, 'objectNotSaved');
-    }
+    return totalNotIndexed > 0;
+}
+
+async function pause(milliseconds) {
+    return new Promise(resolve => setTimeout(() => resolve(), milliseconds));
 }
 
 async function getSystemStatusData() {
