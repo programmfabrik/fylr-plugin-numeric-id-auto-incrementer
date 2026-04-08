@@ -10,8 +10,10 @@ build: clean buildinfojson
 	mkdir -p build/$(PLUGIN_NAME)
 	mkdir -p build/$(PLUGIN_NAME)/server
 	mkdir -p build/$(PLUGIN_NAME)/l10n
+	mkdir -p build/$(PLUGIN_NAME)/webfrontend
 
 	cp src/server/${SERVER_FILE} build/${PLUGIN_NAME}/server/${SERVER_FILE}
+	cp src/webfrontend/baseConfig/objectTypeSelector.js build/$(PLUGIN_NAME)/webfrontend/$(PLUGIN_NAME).js
 	cp l10n/$(PLUGIN_NAME).csv build/$(PLUGIN_NAME)/l10n/$(PLUGIN_NAME).csv
 	cp manifest.master.yml build/$(PLUGIN_NAME)/manifest.yml
 	cp build-info.json build/$(PLUGIN_NAME)/build-info.json

@@ -8,7 +8,11 @@ plugin:
   server:
     api-version:
       require: 1
+  webfrontend:
+    url: numeric-id-auto-incrementer.js
   l10n: l10n/numeric-id-auto-incrementer.csv
+
+base_url_prefix: "webfrontend"
 
 base_config:
   - name: numericIdAutoIncrementer
@@ -18,6 +22,7 @@ base_config:
         fields:
         - name: name
           type: text
+          plugin_type: objectTypeSelector
           position: 0
         - name: nested_fields
           type: table
