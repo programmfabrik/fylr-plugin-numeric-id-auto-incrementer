@@ -1,12 +1,10 @@
 key,de-DE,en-US
 server.config.name.system.numericIdAutoIncrementer,Automatische Inkrementierung numerischer IDs,Numeric ID auto incrementer
-server.config.parameter.system.numericIdAutoIncrementer.object_types.label,Objekttypen,Object types
-server.config.parameter.system.numericIdAutoIncrementer.object_types.name.label,Name des Objekttyps,Object type name
-server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.label,Übergeordnete Wiederholfelder,Parent nested fields
-server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.field_path.label,Pfad zum übergeordneten Feld (leer wenn oberste Ebene),Path to parent field (empty if root level)
-server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.id_field_name.label,Name des ID-Feldes,ID field name
-server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.base_fields.label,Namen der Basisfelder,Base field names
-server.config.parameter.system.numericIdAutoIncrementer.object_types.nested_fields.pool_ids.label,IDs der berücksichtigten Pools,IDs of pools to consider
-server.config.parameter.system.numericIdAutoIncrementer.max_not_indexed.label,Maximale Anzahl nicht indizierter Objekte,Maximum number of non-indexed objects
-server.config.parameter.system.numericIdAutoIncrementer.indexer_error_message.label,Text der Indexer-Fehlermeldung,Text of indexer error message
-base.error.realm.objectNotSaved,Speichern nicht möglich,Saving not possible
+server.config.parameter.system.numericIdAutoIncrementer.incrementer_object_type.label,Inkrementer-Objekttyp,Incrementer object type
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.label,Zähler,Incrementers
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.incrementer_id.label,Zähler-Kennung,Incrementer identifier
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.object_types.label,Objekttypen,Object types
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.field_path.label,Pfad zum übergeordneten Feld (leer wenn oberste Ebene),Path to parent field (empty if root level)
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.id_field_name.label,Name des ID-Feldes,ID field name
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.base_fields.label,Namen der Basisfelder,Base field names
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.pool_ids.label,IDs der berücksichtigten Pools,IDs of pools to consider

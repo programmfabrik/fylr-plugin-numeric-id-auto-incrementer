@@ -14,14 +14,16 @@ ObjectTypeSelector = (function(superClass) {
     Plugin.getFieldDefFromParm = function(_, name, def, __) {
         if (def.plugin_type !== 'objectTypeSelector') return;
 
-        const options = ez5.schema.CURRENT._objecttypes.map(objectTypeConfiguration => {
+        const objectTypeOptions = ez5.schema.CURRENT._objecttypes.map(objectTypeConfiguration => {
             const objectType = new Objecttype(new Table('CURRENT', objectTypeConfiguration.table_id))
         
             return {
                 text: objectType.nameLocalized() + ' [' + objectType.name() + ']',
                 value: objectTypeConfiguration.name
              };
-        }); 
+        });
+
+        const options = [{ text: '', value: undefined }].concat(objectTypeOptions);
 
         return {
             type: CUI.Select,

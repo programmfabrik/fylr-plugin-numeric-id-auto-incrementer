@@ -1,18 +1,18 @@
 PLUGIN_NAME = numeric-id-auto-incrementer
 ZIP_NAME = "NumericIdAutoIncrementer.zip"
 
-SERVER_FILE = setIds.js
-
 all: build zip
 
 build: clean buildinfojson
 	mkdir -p build
 	mkdir -p build/$(PLUGIN_NAME)
 	mkdir -p build/$(PLUGIN_NAME)/server
+	mkdir -p build/$(PLUGIN_NAME)/server/extension
 	mkdir -p build/$(PLUGIN_NAME)/l10n
 	mkdir -p build/$(PLUGIN_NAME)/webfrontend
 
-	cp src/server/${SERVER_FILE} build/${PLUGIN_NAME}/server/${SERVER_FILE}
+	cp src/server/setIds.js build/${PLUGIN_NAME}/server/setIds.js
+	cp src/server/extension/initialize.js build/${PLUGIN_NAME}/server/extension/initialize.js
 	cp src/webfrontend/baseConfig/objectTypeSelector.js build/$(PLUGIN_NAME)/webfrontend/$(PLUGIN_NAME).js
 	cp l10n/$(PLUGIN_NAME).csv build/$(PLUGIN_NAME)/l10n/$(PLUGIN_NAME).csv
 	cp manifest.master.yml build/$(PLUGIN_NAME)/manifest.yml

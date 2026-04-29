@@ -17,44 +17,45 @@ base_url_prefix: "webfrontend"
 base_config:
   - name: numericIdAutoIncrementer
     parameters:
-      object_types:
+      incrementer_object_type:
+        type: text
+        plugin_type: objectTypeSelector
+        position: 0
+      incrementers:
         type: table
         fields:
-        - name: name
-          type: text
-          plugin_type: objectTypeSelector
-          position: 0
-        - name: nested_fields
-          type: table
-          fields:
-            - name: field_path
-              type: text
-              position: 0
-            - name: id_field_name
-              type: text
-              position: 1
-            - name: base_fields
-              type: table
-              fields:
-                - name: field_name
-                  type: text
-                  position: 0
-              position: 2
-            - name: pool_ids
-              type: table
-              fields:
-                - name: pool_id
-                  type: text
-                  position: 0
-              position: 3
-          position: 1
-        position: 0
-      max_not_indexed:
-        type: int
+          - name: incrementer_id
+            type: text
+            position: 0
+          - name: object_types
+            type: table
+            fields:
+              - name: name
+                type: text
+                plugin_type: objectTypeSelector
+                position: 0
+            position: 1
+          - name: field_path
+            type: text
+            position: 2
+          - name: id_field_name
+            type: text
+            position: 3
+          - name: base_fields
+            type: table
+            fields:
+              - name: field_name
+                type: text
+                position: 0
+            position: 4
+          - name: pool_ids
+            type: table
+            fields:
+              - name: pool_id
+                type: text
+                position: 0
+            position: 5
         position: 1
-      indexer_error_message:
-        type: text
-        position: 2
 
 callbacks:
   db_pre_save:
@@ -76,3 +77,19 @@ callbacks:
                   value: "%_exec.pluginDir%/server/setIds.js"
                 - type: "value"
                   value: "%info.json%"
+
+extensions:
+  initialize:
+    exec:
+      service: "node"
+      commands:
+        - prog: "node"
+          stdin:
+            type: "body"
+          stdout:
+            type: "body"
+          args:
+            - type: "value"
+              value: "%_exec.pluginDir%/server/extension/initialize.js"
+            - type: "value"
+              value: "%info.json%"

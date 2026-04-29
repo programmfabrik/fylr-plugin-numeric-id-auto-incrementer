@@ -16,10 +16,9 @@ process.stdin.on('end', async () => {
     const data = JSON.parse(input);
     const configuration = getPluginConfiguration(data);
     const changedObjects = [];
-    const addedIds = {};
 
     for (let object of data.objects) {
-        if (await processObject(object, configuration, addedIds)) changedObjects.push(object);
+        if (await processObject(object, configuration)) changedObjects.push(object);
     }
 
     console.log(JSON.stringify({ objects: changedObjects }));
@@ -34,53 +33,45 @@ function getPluginConfiguration(data) {
     return data.info.config.plugin['numeric-id-auto-incrementer'].config.numericIdAutoIncrementer;
 }
 
-async function processObject(object, configuration, addedIds) {
-    const nestedFieldsConfiguration = getNestedFieldsConfiguration(configuration, object._objecttype);
-    const indexerSettings = {
-        maxNotIndexed: configuration.max_not_indexed,
-        errorMessage: configuration.indexer_error_message
-    };
+async function processObject(object, configuration) {
+    const incrementerConfigurations = configuration.incrementers;
     let changed = false;
 
-    for (let nestedFieldConfiguration of nestedFieldsConfiguration) {
-        if (!isInConfiguredPool(object, nestedFieldConfiguration)) continue;
-        if (await processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds)) changed = true;
+    for (let incrementerConfiguration of incrementerConfigurations) {
+        if (!isInConfiguredPool(object, incrementerConfiguration) || !isConfiguredObjectType(object, incrementerConfiguration)) continue;
+        if (await processNestedFields(object, incrementerConfiguration, configuration.incrementer_object_type)) changed = true;
     }
 
     return changed;
 }
 
-function getNestedFieldsConfiguration(configuration, objectType) {
-    return configuration.object_types
-        ?.find(configuration => configuration.name === objectType)
-        ?.nested_fields ?? [];
-}
-
-function isInConfiguredPool(object, nestedFieldConfiguration) {
-    const poolIds = nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id);
+function isInConfiguredPool(object, incrementerConfiguration) {
+    const poolIds = incrementerConfiguration.pool_ids?.map(pool => pool.pool_id);
     if (!poolIds?.length) return true;
     
     for (let objectPool of object[object._objecttype]._pool._path) {
         if (poolIds.includes(objectPool.pool._id.toString())) return true;
     }
+
     return false;
 }
 
-async function processNestedFields(object, nestedFieldConfiguration, indexerSettings, addedIds) {
-    const nestedFields = getNestedFields(object, nestedFieldConfiguration.field_path);
+function isConfiguredObjectType(object, incrementerConfiguration) {
+    return incrementerConfiguration.object_types.map(objectType => objectType.name)
+        .includes(object._objecttype);
+}
+
+async function processNestedFields(object, incrementerConfiguration, incrementerObjectType) {
+    const nestedFields = getNestedFields(object, incrementerConfiguration.field_path);
 
     let changed = false;
     for (let nestedField of nestedFields) {
         if (await addId(
-            object._objecttype,
-            nestedFields,
+            incrementerConfiguration.incrementer_id,
+            incrementerObjectType,
             nestedField,
-            nestedFieldConfiguration.field_path,
-            nestedFieldConfiguration.id_field_name,
-            nestedFieldConfiguration.base_fields?.map(field => field.field_name),
-            nestedFieldConfiguration.pool_ids?.map(pool => pool.pool_id),
-            indexerSettings,
-            addedIds
+            incrementerConfiguration.id_field_name,
+            incrementerConfiguration.base_fields?.map(field => field.field_name)
         )) changed = true;
     }
 
@@ -114,125 +105,53 @@ function getFieldValues(object, pathSegments) {
     }
 }
 
-async function addId(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
+async function addId(incrementerId, incrementerObjectType, nestedField, idFieldName, baseFieldNames) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !getBaseFieldValue(nestedField, baseFieldName))
         || nestedField[idFieldName]
         || nestedField._uuid) return false;
 
-    const newId = await getIdValue(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds
-    );
-
-    nestedField[idFieldName] = newId;
-    const path = objectType + (nestedFieldPath ? '.' + nestedFieldPath : '');
-    if (!addedIds[path]) addedIds[path] = [];
-    addedIds[path].push(newId);
+    nestedField[idFieldName] = await getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames);
 
     return true;
 }
 
-async function getIdValue(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, indexerSettings, addedIds) {
-    await assertIndexerIsFree(indexerSettings);
-    const existingIdValues = await findExistingIdValues(
-        objectType, nestedFields, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, addedIds
-    );
-    existingIdValues.sort((value1, value2) => value1 - value2);
-
-    return existingIdValues.length
-        ? existingIdValues.pop() + 1
-        : 1;
-}
-
-async function findExistingIdValues(objectType, nestedFields, nestedField, nestedFieldPath, idFieldName,
-                                    baseFieldNames, poolIds, addedIds) {
-    const idValuesInCurrentObject = findExistingIdValuesInNestedFields(
-        nestedFields, nestedField, idFieldName, baseFieldNames
-    );
-    const idValuesInOtherObjects = await findExistingIdValuesInOtherObjects(
-        objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds
-    );
+async function getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames) {
+    const baseValue = getBaseValue(nestedField, baseFieldNames);
     
-    return idValuesInCurrentObject.concat(idValuesInOtherObjects).concat(addedIds[objectType + '.' + nestedFieldPath])
-        .filter(value => value);
-}
+    let id;
+    let attempts = 10;
 
-function findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldName, baseFieldNames) {
-    for (let baseFieldName of baseFieldNames) {
-        nestedFields = nestedFields.filter(field => {
-            return getBaseFieldValue(field, baseFieldName) === getBaseFieldValue(nestedField, baseFieldName);
-        });
+    while (attempts > 0) {
+        try {
+            const incrementer = await getIncrementer(incrementerId, incrementerObjectType);
+            const incrementerMap = getIncrementerMap(incrementer);
+
+            const currentId = incrementerMap[baseValue];
+            id = currentId ? currentId + 1 : 1;
+            incrementerMap[baseValue] = id;
+
+            await updateIncrementerMap(incrementer, incrementerMap);
+            break;
+        } catch (err) {
+            attempts--;
+        }
     }
-    
-    return nestedFields.map(field => field[idFieldName]);
-}
 
-async function findExistingIdValuesInOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName,
-                                                  baseFieldNames, poolIds) {
-    const objects = await findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds);
-
-    return objects.reduce((result, object) => {
-        const nestedFields = getNestedFields(object, nestedFieldPath);
-        const idValues = findExistingIdValuesInNestedFields(nestedFields, nestedField, idFieldName, baseFieldNames);
-        return result.concat(idValues);
-    }, []);
-}
-
-async function findOtherObjects(objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, offset = 0) {
-    const url = info.api_url + '/api/v1/search?access_token=' + info.api_user_access_token;
-    const query = baseFieldNames.map(baseFieldName => getBaseFieldQuery(objectType, nestedField, nestedFieldPath, baseFieldName));
-    if (poolIds?.length) {
-        query.push({
-            type: 'in',
-            bool: 'must',
-            fields: [objectType + '._pool._path.pool._id'],
-            in: poolIds
-        });
-    }
-    const chunkSize = 100;
-    const searchRequest = {
-        search: query,
-        include_fields: ['_objecttype', getFullFieldPath(objectType, nestedField, nestedFieldPath, idFieldName)].concat(
-            baseFieldNames.map(baseFieldName => getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName))
-        ),
-        limit: chunkSize,
-        offset
-    };
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(searchRequest)
-        });
-        const result = await response.json();
-        return result.count > searchRequest.limit + offset
-            ? result.objects.concat(
-                await findOtherObjects(
-                    objectType, nestedField, nestedFieldPath, idFieldName, baseFieldNames, poolIds, offset + chunkSize
-                )
-            ) : result.objects;
-    } catch (err) {
-        throwErrorToFrontend('Suchanfrage fehlgeschlagen', JSON.stringify(err));
+    if (attempts > 0) {
+        return id;   
+    } else {
+        throwErrorToFrontend('Das Objekt konnte nicht gespeichert werden. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut.')
     }
 }
 
-function getBaseFieldQuery(objectType, nestedField, nestedFieldPath, baseFieldName) {
-    return baseFieldName.endsWith('_uuid')
-        ? {
-            type: 'in',
-            bool: 'must',
-            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
-            in: [getBaseFieldValue(nestedField, baseFieldName)]
-        } : {
-            type: 'match',
-            bool: 'must',
-            fields: [getFullFieldPath(objectType, nestedField, nestedFieldPath, baseFieldName)],
-            string: getBaseFieldValue(nestedField, baseFieldName)
-        };
+function getBaseValue(nestedField, baseFieldNames) {
+    return baseFieldNames.reduce((result, baseFieldName) => {
+        const baseFieldValue = getBaseFieldValue(nestedField, baseFieldName);
+        result.push(baseFieldValue ?? '');
+        return result;
+    }, []).join('|||');
 }
 
 function getBaseFieldValue(nestedField, baseFieldName) {
@@ -243,15 +162,6 @@ function getBaseFieldValue(nestedField, baseFieldName) {
         : fieldValue;
 }
 
-function getFullFieldPath(objectType, nestedField, nestedFieldPath, fieldName) {
-    let result = objectType + '.'
-        + (nestedFieldPath?.length ? nestedFieldPath + '.' : '')
-        + fieldName;
-    if (isDanteConcept(nestedField[fieldName])) result += '.conceptURI';
-
-    return result;
-}
-
 function isDanteConcept(fieldValue) {
     return fieldValue !== undefined
         && fieldValue !== null
@@ -260,29 +170,37 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
-async function assertIndexerIsFree(indexerSettings) {
-    if (!indexerSettings.maxNotIndexed) return;
-
-    const systemStatusData = await getSystemStatusData();
-    const totalNotIndexed = systemStatusData.Stats.total_not_indexed;
-    
-    if (totalNotIndexed > indexerSettings.maxNotIndexed) {
-        throwErrorToFrontend(indexerSettings.errorMessage, undefined, 'objectNotSaved');
-    }
+async function getIncrementer(incrementerId, incrementerObjectType) {
+    const incrementers = await fetchObjects(incrementerObjectType);
+    return incrementers.find(incrementer => incrementer[incrementerObjectType].incrementer_id === incrementerId);
 }
 
-async function getSystemStatusData() {
-    try {
-        const response = await fetch('http://fylr.localhost:8082/inspect/system/status/', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        return await response.json();
-    } catch (err) {
-        throwErrorToFrontend('Systemstatus konnte nicht abgerufen werden', JSON.stringify(err));
-    }
+function getIncrementerMap(incrementer) {
+    return JSON.parse(incrementer[incrementer._objecttype].incrementer_map);
+}
+
+async function updateIncrementerMap(incrementer, incrementerMap) {
+    incrementer[incrementer._objecttype].incrementer_map = JSON.stringify(incrementerMap);
+    await saveObject(incrementer);
+}
+
+async function fetchObjects(objectType) {
+    const url = info.api_url + '/api/v1/db/' + objectType + '/_all_fields/list?version=current&access_token=' + info.api_user_access_token;
+
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
+
+    return response.json();
+}
+
+async function saveObject(object) {
+    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
+
+    const data = object[object._objecttype];
+    data._version = data._version ? data._version += 1 : 1;
+
+    const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
+    return response.json();
 }
 
 function throwErrorToFrontend(error, description, realm) {
