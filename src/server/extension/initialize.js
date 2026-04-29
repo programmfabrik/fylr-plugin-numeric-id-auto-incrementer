@@ -139,7 +139,6 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
-
 async function saveIncrementerMap(incrementerMap) {
     const incrementerObjectType = getPluginConfiguration().incrementer_object_type;
     const incrementers = await fetchObjects(incrementerObjectType, 1000, 0);

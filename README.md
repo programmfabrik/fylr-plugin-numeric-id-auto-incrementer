@@ -35,6 +35,14 @@ All plugin configuration takes place in base configuration.
     * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).
     * *IDs of pools to consider*: If not empty, IDs are only updated for resources in the specified pools (and their child pools). Also, resources in other pools are not considered during ID generation.
 
+## Initializing
+
+Before the plugin is used for the first time, the incrementer objects have to be created via calling the REST API endpoint "initialize":
+
+POST /api/v1/plugin/extension/numeric-id-auto-incrementer/initialize?access_token=ACCESS_TOKEN
+
+The endpoint can be called again at a later point in time to rebuild the incrementer objects based on the IDs currently set in the database.
+
 ## Examples
 
 ### Example 1: ID in nested field
