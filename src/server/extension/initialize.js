@@ -140,12 +140,15 @@ function isDanteConcept(fieldValue) {
 }
 
 async function saveIncrementerMap(incrementerMap) {
-    const incrementerObjectType = getPluginConfiguration().incrementer_object_type;
+    const pluginConfiguration = getPluginConfiguration();
+    const incrementerObjectType = pluginConfiguration.incrementer_object_type;
+    const incrementerIdFieldName = pluginConfiguration.incrementer_id_field_name;
+    const incrementerValuesFieldName = pluginConfiguration.incrementer_values_field_name;
     const incrementers = await fetchObjects(incrementerObjectType, 1000, 0);
     
     for (let incrementerId of Object.keys(incrementerMap)) {
         let incrementer = incrementers.find(existingIncrementer => {
-            return existingIncrementer[incrementerObjectType].incrementer_id === incrementerId;
+            return existingIncrementer[incrementerObjectType][incrementerIdFieldName] === incrementerId;
         });
 
         if (!incrementer) {
@@ -153,12 +156,11 @@ async function saveIncrementerMap(incrementerMap) {
                 '_objecttype': incrementerObjectType,
                 '_mask': incrementerObjectType + '__all_fields'
             }
-            incrementer[incrementerObjectType] = {
-                incrementer_id: incrementerId
-            };
+            incrementer[incrementerObjectType]
+            incrementer[incrementerObjectType][incrementerIdFieldName] = incrementerId;
         }
 
-        incrementer[incrementerObjectType].incrementer_map = JSON.stringify(incrementerMap[incrementerId]);
+        incrementer[incrementerObjectType][incrementerValuesFieldName] = JSON.stringify(incrementerMap[incrementerId]);
         await saveObject(incrementer);
     }
 }

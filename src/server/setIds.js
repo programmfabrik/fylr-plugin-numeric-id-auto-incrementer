@@ -39,7 +39,7 @@ async function processObject(object, configuration) {
 
     for (let incrementerConfiguration of incrementerConfigurations) {
         if (!isInConfiguredPool(object, incrementerConfiguration) || !isConfiguredObjectType(object, incrementerConfiguration)) continue;
-        if (await processNestedFields(object, incrementerConfiguration, configuration.incrementer_object_type)) changed = true;
+        if (await processNestedFields(object, incrementerConfiguration, configuration, configuration.incrementer_object_type)) changed = true;
     }
 
     return changed;
@@ -61,7 +61,7 @@ function isConfiguredObjectType(object, incrementerConfiguration) {
         .includes(object._objecttype);
 }
 
-async function processNestedFields(object, incrementerConfiguration, incrementerObjectType) {
+async function processNestedFields(object, incrementerConfiguration, configuration, incrementerObjectType) {
     const nestedFields = getNestedFields(object, incrementerConfiguration.field_path);
 
     let changed = false;
@@ -71,7 +71,8 @@ async function processNestedFields(object, incrementerConfiguration, incrementer
             incrementerObjectType,
             nestedField,
             incrementerConfiguration.id_field_name,
-            incrementerConfiguration.base_fields?.map(field => field.field_name)
+            incrementerConfiguration.base_fields?.map(field => field.field_name),
+            configuration
         )) changed = true;
     }
 
@@ -105,19 +106,19 @@ function getFieldValues(object, pathSegments) {
     }
 }
 
-async function addId(incrementerId, incrementerObjectType, nestedField, idFieldName, baseFieldNames) {
+async function addId(incrementerId, incrementerObjectType, nestedField, idFieldName, baseFieldNames, configuration) {
     if (!idFieldName?.length
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !getBaseFieldValue(nestedField, baseFieldName))
         || nestedField[idFieldName]
         || nestedField._uuid) return false;
 
-    nestedField[idFieldName] = await getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames);
+    nestedField[idFieldName] = await getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames, configuration);
 
     return true;
 }
 
-async function getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames) {
+async function getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames, configuration) {
     const baseValue = getBaseValue(nestedField, baseFieldNames);
     
     let id;
@@ -125,14 +126,14 @@ async function getIdValue(incrementerId, incrementerObjectType, nestedField, bas
 
     while (attempts > 0) {
         try {
-            const incrementer = await getIncrementer(incrementerId, incrementerObjectType);
-            const incrementerMap = getIncrementerMap(incrementer);
+            const incrementer = await getIncrementer(incrementerId, incrementerObjectType, configuration);
+            const incrementerMap = getIncrementerMap(incrementer, configuration);
 
             const currentId = incrementerMap[baseValue];
             id = currentId ? currentId + 1 : 1;
             incrementerMap[baseValue] = id;
 
-            await updateIncrementerMap(incrementer, incrementerMap);
+            await updateIncrementerMap(incrementer, incrementerMap, configuration);
             break;
         } catch (err) {
             attempts--;
@@ -170,17 +171,20 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
-async function getIncrementer(incrementerId, incrementerObjectType) {
+async function getIncrementer(incrementerId, incrementerObjectType, configuration) {
+    const incrementerIdFieldName = configuration.incrementer_id_field_name;
     const incrementers = await fetchObjects(incrementerObjectType);
-    return incrementers.find(incrementer => incrementer[incrementerObjectType].incrementer_id === incrementerId);
+    return incrementers.find(incrementer => incrementer[incrementerObjectType][incrementerIdFieldName] === incrementerId);
 }
 
-function getIncrementerMap(incrementer) {
-    return JSON.parse(incrementer[incrementer._objecttype].incrementer_map);
+function getIncrementerMap(incrementer, configuration) {
+    const incrementerValuesFieldName = configuration.incrementer_values_field_name;
+    return JSON.parse(incrementer[incrementer._objecttype][incrementerValuesFieldName]);
 }
 
-async function updateIncrementerMap(incrementer, incrementerMap) {
-    incrementer[incrementer._objecttype].incrementer_map = JSON.stringify(incrementerMap);
+async function updateIncrementerMap(incrementer, incrementerMap, configuration) {
+    const incrementerValuesFieldName = configuration.incrementer_values_field_name;
+    incrementer[incrementer._objecttype][incrementerValuesFieldName] = JSON.stringify(incrementerMap);
     await saveObject(incrementer);
 }
 
@@ -200,6 +204,8 @@ async function saveObject(object) {
     data._version = data._version ? data._version += 1 : 1;
 
     const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
+    if (!response.ok) throw 'Speichern fehlgeschlagen';
+
     return response.json();
 }
 
