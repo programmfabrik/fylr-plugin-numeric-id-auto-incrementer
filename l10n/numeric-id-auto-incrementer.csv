@@ -3,6 +3,7 @@ server.config.name.system.numericIdAutoIncrementer,Automatische Inkrementierung 
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_object_type.label,Zähler-Objekttyp,Incrementer object type
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_id_field_name.label,Name des Feldes 'Zähler-ID',Field name 'Incrementer ID'
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_values_field_name.label,Name des Feldes 'Zähler-Werte',Field name 'Incrementer values'
+server.config.parameter.system.numericIdAutoIncrementer.incrementer_mask.label,Maske für Abfrage und Bearbeitung von Zähler-Objekten,Mask for reading and editing incrementer objects
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.label,Zähler,Incrementers
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.incrementer_id.label,Zähler-Kennung,Incrementer identifier
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.object_types.label,Objekttypen,Object types

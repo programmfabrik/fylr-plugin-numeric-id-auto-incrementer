@@ -27,6 +27,9 @@ base_config:
       incrementer_values_field_name:
         type: text
         position: 2
+      incrementer_mask:
+        type: text
+        position: 3
       incrementers:
         type: table
         fields:
@@ -61,7 +64,7 @@ base_config:
                 type: text
                 position: 0
             position: 5
-        position: 3
+        position: 4
 
 callbacks:
   db_pre_save:

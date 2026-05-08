@@ -173,7 +173,8 @@ function isDanteConcept(fieldValue) {
 
 async function getIncrementer(incrementerId, incrementerObjectType, configuration) {
     const incrementerIdFieldName = configuration.incrementer_id_field_name;
-    const incrementers = await fetchObjects(incrementerObjectType);
+    const incrementerMask = configuration.incrementer_mask;
+    const incrementers = await fetchObjects(incrementerObjectType, incrementerMask);
     return incrementers.find(incrementer => incrementer[incrementerObjectType][incrementerIdFieldName] === incrementerId);
 }
 
@@ -188,8 +189,8 @@ async function updateIncrementerMap(incrementer, incrementerMap, configuration) 
     await saveObject(incrementer);
 }
 
-async function fetchObjects(objectType) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/_all_fields/list?version=current&access_token=' + info.api_user_access_token;
+async function fetchObjects(objectType, mask) {
+    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?version=current&access_token=' + info.api_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
