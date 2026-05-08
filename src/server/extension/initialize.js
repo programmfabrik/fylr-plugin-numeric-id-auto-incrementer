@@ -179,19 +179,6 @@ async function fetchObjects(objectType, limit, offset) {
     return response.json();
 }
 
-async function fetchObject(objectType, mask, id) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/' + id + '?access_token=' + info.api_user_access_token;
-
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throw 'Fehler bei der Abfrage des Objekts ' + id;
-
-    const result = await response.json();
-
-    return result?.length
-        ? result[0]
-        : undefined;
-}
-
 async function saveObject(object) {
     const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
 
