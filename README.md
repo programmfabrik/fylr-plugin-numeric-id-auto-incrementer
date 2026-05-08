@@ -27,6 +27,9 @@ For the plugin to work, a new object type has to be created. This object type ne
 All plugin configuration takes place in base configuration.
 
 * *Incrementer object type*: The object type that has been created for usage with the plugin
+* *Field name 'Incrementer ID'*: The name of the field to use for storing the ID in incrementer objects
+* *Field name 'Incrementer values'*: The name of the field to use for storing the values in incrementer objects
+* *Mask for reading and editing incrementer objects*: The mask to use when working with incrementer objects
 * *Incrementers*:
     * *Incrementer ID*: The unique ID of this specific incrementer
     * *Object types*: The object types for which this incrementer works
