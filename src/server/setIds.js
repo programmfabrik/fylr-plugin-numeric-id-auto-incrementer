@@ -62,14 +62,14 @@ function isConfiguredObjectType(object, incrementerConfiguration) {
 }
 
 async function processNestedFields(object, incrementerConfiguration, configuration, incrementerObjectType) {
-    const nestedFields = getNestedFields(object, incrementerConfiguration.field_path);
+    const nestedFieldEntries = getNestedFieldEntries(object, incrementerConfiguration.field_path);
 
     let changed = false;
-    for (let nestedField of nestedFields) {
+    for (let entry of nestedFieldEntries) {
         if (await addId(
             incrementerConfiguration.incrementer_id,
             incrementerObjectType,
-            nestedField,
+            entry,
             incrementerConfiguration.id_field_name,
             incrementerConfiguration.base_fields?.map(field => field.field_name),
             configuration
@@ -77,33 +77,6 @@ async function processNestedFields(object, incrementerConfiguration, configurati
     }
 
     return changed;
-}
-
-function getNestedFields(object, nestedFieldPath) {
-    const objectData = object[object._objecttype];
-
-    if (nestedFieldPath?.length) {
-        return getFieldValues(objectData, nestedFieldPath.split('.'));
-    } else {
-        return [objectData];
-    }
-}
-
-function getFieldValues(object, pathSegments) {
-    const fieldName = pathSegments.shift();
-    const field = object[fieldName];
-
-    if (field === undefined) {
-        return [];
-    } else if (pathSegments.length === 0) {
-        return Array.isArray(field) ? field : [field];
-    } else if (Array.isArray(field)) {
-        return field.map(entry => getFieldValues(entry, pathSegments.slice()))
-            .filter(data => data !== undefined)
-            .reduce((result, fieldValues) => result.concat(fieldValues), []);
-    } else {
-        return getFieldValues(field, pathSegments);
-    }
 }
 
 async function addId(incrementerId, incrementerObjectType, nestedField, idFieldName, baseFieldNames, configuration) {
@@ -155,22 +128,6 @@ function getBaseValue(nestedField, baseFieldNames) {
     }, []).join('|||');
 }
 
-function getBaseFieldValue(nestedField, baseFieldName) {
-    const fieldValue = getFieldValues(nestedField, baseFieldName.split('.'))?.[0];
-
-    return isDanteConcept(fieldValue)
-        ? fieldValue.conceptURI
-        : fieldValue;
-}
-
-function isDanteConcept(fieldValue) {
-    return fieldValue !== undefined
-        && fieldValue !== null
-        && typeof fieldValue === 'object'
-        && fieldValue.conceptName !== undefined
-        && fieldValue.conceptURI !== undefined;
-}
-
 async function getIncrementer(incrementerId, incrementerObjectType, configuration) {
     const incrementerIdFieldName = configuration.incrementer_id_field_name;
     const incrementerMask = configuration.incrementer_mask;
@@ -197,18 +154,6 @@ async function fetchObjects(objectType, mask) {
 
     const objects = await response.json();
     return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
-}
-
-async function saveObject(object) {
-    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
-
-    const data = object[object._objecttype];
-    data._version = data._version ? data._version += 1 : 1;
-
-    const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
-    if (!response.ok) throw 'Speichern fehlgeschlagen';
-
-    return response.json();
 }
 
 function throwErrorToFrontend(error, description, realm) {
