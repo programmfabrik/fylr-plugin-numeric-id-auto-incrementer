@@ -101,6 +101,8 @@ async function saveIncrementerMap(incrementerMap) {
     const incrementerObjectType = pluginConfiguration.incrementer_object_type;
     const incrementerIdFieldName = pluginConfiguration.incrementer_id_field_name;
     const incrementerValuesFieldName = pluginConfiguration.incrementer_values_field_name;
+    const incrementerMask = pluginConfiguration.incrementer_mask;
+
     const incrementers = await fetchObjects(incrementerObjectType, 1000, 0);
     
     for (let incrementerId of Object.keys(incrementerMap)) {
@@ -111,9 +113,9 @@ async function saveIncrementerMap(incrementerMap) {
         if (!incrementer) {
             incrementer = {
                 '_objecttype': incrementerObjectType,
-                '_mask': incrementerObjectType + '__all_fields'
+                '_mask': incrementerMask
             }
-            incrementer[incrementerObjectType]
+            incrementer[incrementerObjectType] = {};
             incrementer[incrementerObjectType][incrementerIdFieldName] = incrementerId;
         }
 
