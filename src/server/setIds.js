@@ -195,7 +195,8 @@ async function fetchObjects(objectType, mask) {
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
 
-    return response.json();
+    const objects = await response.json();
+    return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
 }
 
 async function saveObject(object) {
