@@ -190,7 +190,7 @@ async function updateIncrementerMap(incrementer, incrementerMap, configuration) 
 }
 
 async function fetchObjects(objectType, mask) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?version=current&access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.api_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);

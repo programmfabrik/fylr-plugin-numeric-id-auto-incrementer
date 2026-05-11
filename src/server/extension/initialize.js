@@ -170,7 +170,7 @@ function getPluginConfiguration() {
 }
 
 async function fetchObjects(objectType, limit, offset) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/_all_fields/list?version=current&limit=' + limit
+    const url = info.api_url + '/api/v1/db/' + objectType + '/_all_fields/list?limit=' + limit
         + '&offset=' + offset + '&access_token=' + info.api_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
