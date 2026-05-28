@@ -41,6 +41,10 @@ async function buildIncrementerMap() {
     const result = {};
     const configuration = getPluginConfiguration();
 
+    for (let incrementerConfiguration of configuration.incrementers) {
+        result[incrementerConfiguration.incrementer_id] = {};
+    }
+
     for (let objectType of getObjectTypes(configuration)) {
         let objects;
         let offset = 0;
@@ -61,7 +65,7 @@ async function buildIncrementerMap() {
                         getNestedFieldEntries(object, incrementerConfiguration.field_path),
                         incrementerConfiguration.id_field_name,
                         incrementerConfiguration.base_fields?.map(field => field.field_name),
-                        result[incrementerConfiguration.incrementer_id] ?? {}
+                        result[incrementerConfiguration.incrementer_id]
                     );
                 }
             }
