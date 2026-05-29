@@ -38,7 +38,7 @@ async function processObject(object, configuration) {
     let changed = false;
 
     for (let incrementerConfiguration of incrementerConfigurations) {
-        if (!isInConfiguredPool(object, incrementerConfiguration) || !isConfiguredObjectType(object, incrementerConfiguration)) continue;
+        if (!isConfiguredObjectType(object, incrementerConfiguration) || !isInConfiguredPool(object, incrementerConfiguration)) continue;
         if (await processNestedFields(object, incrementerConfiguration, configuration, configuration.incrementer_object_type)) changed = true;
     }
 
@@ -48,6 +48,8 @@ async function processObject(object, configuration) {
 function isInConfiguredPool(object, incrementerConfiguration) {
     const poolIds = incrementerConfiguration.pool_ids?.map(pool => pool.pool_id);
     if (!poolIds?.length) return true;
+
+    if (!object[object._objecttype]._pool) return false;
     
     for (let objectPool of object[object._objecttype]._pool._path) {
         if (poolIds.includes(objectPool.pool._id.toString())) return true;
