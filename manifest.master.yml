@@ -86,19 +86,3 @@ callbacks:
                   value: "%_exec.pluginDir%/server/setIds.js"
                 - type: "value"
                   value: "%info.json%"
-
-extensions:
-  initialize:
-    exec:
-      service: "node"
-      commands:
-        - prog: "node"
-          stdin:
-            type: "body"
-          stdout:
-            type: "body"
-          args:
-            - type: "value"
-              value: "%_exec.pluginDir%/server/extension/initialize.js"
-            - type: "value"
-              value: "%info.json%"

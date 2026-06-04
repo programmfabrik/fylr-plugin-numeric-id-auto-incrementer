@@ -40,11 +40,15 @@ All plugin configuration takes place in base configuration.
 
 ## Initializing
 
-Before the plugin is used for the first time, the incrementer objects have to be created via calling the REST API endpoint "initialize":
+Before the plugin is used for the first time, the incrementer objects have to be created by running the node script "scripts/initialize.js" (Node v22 is required):
 
-POST /api/v1/plugin/extension/numeric-id-auto-incrementer/initialize?access_token=ACCESS_TOKEN
+```
+node scripts/initialize.js FYLR_URL ACCESS_TOKEN
+```
 
-The endpoint can be called again at a later point in time to rebuild the incrementer objects based on the IDs currently set in the database.
+The access token has to be a valid token for the user account that the script is to use.
+
+The script can be run again at a later point in time to rebuild the incrementer objects based on the IDs currently set in the database.
 
 ## Examples
 
