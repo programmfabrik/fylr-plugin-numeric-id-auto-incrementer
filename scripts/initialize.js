@@ -162,7 +162,9 @@ function getBaseFieldValue(nestedField, baseFieldName) {
 
     return isDanteConcept(fieldValue)
         ? fieldValue.conceptURI
-        : fieldValue;
+        : isEmptyObject(fieldValue)
+            ? ''
+            : fieldValue;
 }
 
 function getNestedFieldEntries(object, nestedFieldPath) {
@@ -198,6 +200,13 @@ function isDanteConcept(fieldValue) {
         && typeof fieldValue === 'object'
         && fieldValue.conceptName !== undefined
         && fieldValue.conceptURI !== undefined;
+}
+
+function isEmptyObject(fieldValue) {
+     return fieldValue !== undefined
+        && fieldValue !== null
+        && typeof fieldValue === 'object'
+        && !Object.keys(fieldValue).length;
 }
 
 async function saveObject(object) {
