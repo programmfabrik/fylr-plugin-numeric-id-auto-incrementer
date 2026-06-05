@@ -17,7 +17,12 @@ process.stdin.on('end', async () => {
     const configuration = getPluginConfiguration(data);
     const changedObjects = [];
 
+    const workflows = await fetchWorkflows();
+    const objectTypes = await fetchObjectTypes();
+    const user = await fetchUser();
+
     for (let object of data.objects) {
+        if ((await isRejectedByWorkflow(workflows, object, objectTypes, user))) continue;
         if (await processObject(object, configuration)) changedObjects.push(object);
     }
 
@@ -148,28 +153,6 @@ async function updateIncrementerMap(incrementer, incrementerMap, configuration) 
     await saveObject(incrementer);
 }
 
-async function fetchObjects(objectType, mask) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.api_user_access_token;
-
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
-
-    const objects = await response.json();
-    return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
-}
-
-async function saveObject(object) {
-    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
-
-    const data = object[object._objecttype];
-    data._version = data._version ? data._version += 1 : 1;
-
-    const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
-    if (!response.ok) throw 'Speichern fehlgeschlagen';
-
-    return response.json();
-}
-
 function getBaseFieldValue(nestedField, baseFieldName) {
     const fieldValue = getFieldValues(nestedField, baseFieldName.split('.'))?.[0];
 
@@ -213,6 +196,55 @@ function isDanteConcept(fieldValue) {
         && fieldValue.conceptURI !== undefined;
 }
 
+async function fetchWorkflows() {
+    const url = info.api_url + '/api/v1/transitions?access_token=' + info.api_user_access_token;
+
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Workflows');
+
+    return response.json();
+}
+
+async function fetchUser() {
+    const url = info.api_url + '/api/v1/user/' + info.api_user.user._id + '?access_token=' + info.api_user_access_token;
+
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Userdaten');
+
+    const result = await response.json();
+    return result.length ? result[0] : undefined;
+}
+
+async function fetchObjectTypes() {
+    const url = info.api_url + '/api/v1/objecttype?format=short&access_token=' + info.api_user_access_token;
+
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage der konfigurierten Objekttypen');
+
+    return response.json();
+}
+
+async function fetchObjects(objectType, mask) {
+    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.api_user_access_token;
+
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
+
+    const objects = await response.json();
+    return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
+}
+
+async function saveObject(object) {
+    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
+
+    const data = object[object._objecttype];
+    data._version = data._version ? data._version += 1 : 1;
+
+    const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
+    if (!response.ok) throw 'Speichern fehlgeschlagen';
+
+    return response.json();
+}
 
 function throwErrorToFrontend(error, description, realm) {
     console.log(JSON.stringify({

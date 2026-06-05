@@ -12,6 +12,7 @@ build: clean buildinfojson
 	mkdir -p build/$(PLUGIN_NAME)/webfrontend
 
 	cp src/server/setIds.js build/${PLUGIN_NAME}/server/setIds.js
+	cat src/server/checkWorkflows.js >> build/${PLUGIN_NAME}/server/setIds.js
 	cp src/webfrontend/baseConfig/objectTypeSelector.js build/$(PLUGIN_NAME)/webfrontend/$(PLUGIN_NAME).js
 	cp l10n/$(PLUGIN_NAME).csv build/$(PLUGIN_NAME)/l10n/$(PLUGIN_NAME).csv
 	cp manifest.master.yml build/$(PLUGIN_NAME)/manifest.yml
