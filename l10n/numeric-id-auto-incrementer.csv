@@ -1,5 +1,6 @@
 key,de-DE,en-US
 server.config.name.system.numericIdAutoIncrementer,Automatische Inkrementierung numerischer IDs,Numeric ID auto incrementer
+server.config.parameter.system.numericIdAutoIncrementer.user.label,Benutzeraccount für die ID-Generierung,User account for ID generation
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_object_type.label,Zähler-Objekttyp,Incrementer object type
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_id_field_name.label,Name des Feldes 'Zähler-ID',Field name 'Incrementer ID'
 server.config.parameter.system.numericIdAutoIncrementer.incrementer_values_field_name.label,Name des Feldes 'Zähler-Werte',Field name 'Incrementer values'

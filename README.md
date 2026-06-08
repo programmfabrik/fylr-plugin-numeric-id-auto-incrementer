@@ -26,13 +26,14 @@ For the plugin to work, a new object type has to be created. This object type ne
 
 All plugin configuration takes place in base configuration.
 
+* *User account for ID generation*: The user account that is to be used for generating new ID values. This account must have the rights to read and edit objects of the configured incrementer object type (see below) and also have system rights for accessing object types, users and workflows.
 * *Incrementer object type*: The object type that has been created for usage with the plugin
 * *Field name 'Incrementer ID'*: The name of the field to use for storing the ID in incrementer objects
 * *Field name 'Incrementer values'*: The name of the field to use for storing the values in incrementer objects
 * *Mask for reading and editing incrementer objects*: The mask to use when working with incrementer objects
 * *Incrementers*:
     * *Incrementer ID*: The unique ID of this specific incrementer
-    * *Object types*: The object types for which this incrementer works
+    * *Object types*: The object types for which this incrementer works (please note that the configured user account must have read rights for these object types)
     * *Path to parent field*: The path to the nested field that contains the ID field and the base fields (leave empty if the ID field and the base fields are on the root level of the object).
     * *ID field name*: The name of the ID field to be filled out by the plugin. This has to be a numeric field. The field will only be updated if it is empty, if the parent field has been newly created and if all base fields have been filled out by the user.
     * *Base field names*: The names of the base fields to consider when setting the ID. These can be text fields or fields of the [custom data type DANTE](https://github.com/programmfabrik/fylr-plugin-custom-data-type-dante).

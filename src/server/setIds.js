@@ -206,7 +206,7 @@ function isEmptyObject(fieldValue) {
 }
 
 async function fetchWorkflows() {
-    const url = info.api_url + '/api/v1/transitions?access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/transitions?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Workflows');
@@ -215,7 +215,7 @@ async function fetchWorkflows() {
 }
 
 async function fetchUser() {
-    const url = info.api_url + '/api/v1/user/' + info.api_user.user._id + '?access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/user/' + info.api_user.user._id + '?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Userdaten');
@@ -225,7 +225,7 @@ async function fetchUser() {
 }
 
 async function fetchObjectTypes() {
-    const url = info.api_url + '/api/v1/objecttype?format=short&access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/objecttype?format=short&access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage der konfigurierten Objekttypen');
@@ -234,7 +234,7 @@ async function fetchObjectTypes() {
 }
 
 async function fetchObjects(objectType, mask) {
-    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
@@ -244,7 +244,7 @@ async function fetchObjects(objectType, mask) {
 }
 
 async function saveObject(object) {
-    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.api_user_access_token;
+    const url = info.api_url + '/api/v1/db/' + object._objecttype + '?access_token=' + info.plugin_user_access_token;
 
     const data = object[object._objecttype];
     data._version = data._version ? data._version += 1 : 1;
