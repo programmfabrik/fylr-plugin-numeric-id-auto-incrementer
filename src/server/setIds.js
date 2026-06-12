@@ -102,7 +102,7 @@ async function getIdValue(incrementerId, incrementerObjectType, nestedField, bas
     const baseValue = getBaseValue(nestedField, baseFieldNames);
     
     let id;
-    let attempts = 10;
+    let attempts = 50;
 
     while (attempts > 0) {
         try {
