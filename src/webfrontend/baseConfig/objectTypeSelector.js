@@ -14,7 +14,7 @@ ObjectTypeSelector = (function(superClass) {
     Plugin.getFieldDefFromParm = function(_, name, def, __) {
         if (def.plugin_type !== 'objectTypeSelector') return;
 
-        const objectTypeOptions = ez5.schema.CURRENT._objecttypes.map(objectTypeConfiguration => {
+        const objectTypeOptions = ez5.schema.CURRENT._objecttypes.filter(objecttype => !objecttype._instance).map(objectTypeConfiguration => {
             const objectType = new Objecttype(new Table('CURRENT', objectTypeConfiguration.table_id))
         
             return {
