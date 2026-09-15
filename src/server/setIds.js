@@ -209,7 +209,7 @@ async function fetchWorkflows() {
     const url = info.api_url + '/api/v1/transitions?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Workflows');
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Workflows: ' + JSON.stringify(await response.json()));
 
     return response.json();
 }
@@ -218,7 +218,7 @@ async function fetchUser() {
     const url = info.api_url + '/api/v1/user/' + info.api_user.user._id + '?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Userdaten');
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Userdaten: ' + JSON.stringify(await response.json()));
 
     const result = await response.json();
     return result.length ? result[0] : undefined;
@@ -228,7 +228,7 @@ async function fetchObjectTypes() {
     const url = info.api_url + '/api/v1/objecttype?format=short&access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage der konfigurierten Objekttypen');
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage der konfigurierten Objekttypen: ' + JSON.stringify(await response.json()));
 
     return response.json();
 }
@@ -237,7 +237,7 @@ async function fetchObjects(objectType, mask) {
     const url = info.api_url + '/api/v1/db/' + objectType + '/' + mask + '/list?access_token=' + info.plugin_user_access_token;
 
     const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType);
+    if (!response.ok) throwErrorToFrontend('Fehler bei der Abfrage von Objekten des Typs ' + objectType + ': ' + JSON.stringify(await response.json()));
 
     const objects = await response.json();
     return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
@@ -250,7 +250,7 @@ async function saveObject(object) {
     data._version = data._version ? data._version += 1 : 1;
 
     const response = await fetch(url, { method: 'POST', body: JSON.stringify([object]) });
-    if (!response.ok) throw 'Speichern fehlgeschlagen';
+    if (!response.ok) throw 'Speichern fehlgeschlagen: ' + JSON.stringify(await response.json());
 
     return response.json();
 }
