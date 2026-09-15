@@ -44,10 +44,8 @@ All plugin configuration takes place in base configuration.
 Before the plugin is used for the first time, the incrementer objects have to be created by running the node script "scripts/initialize.js" (Node v22 is required):
 
 ```
-node scripts/initialize.js FYLR_URL ACCESS_TOKEN
+node scripts/initialize.js FYLR_URL USERNAME PASSWORD CLIENT_ID CLIENT_SECRET
 ```
-
-The access token has to be a valid token for the user account that the script is to use.
 
 The script can be run again at a later point in time to rebuild the incrementer objects based on the IDs currently set in the database.
 
