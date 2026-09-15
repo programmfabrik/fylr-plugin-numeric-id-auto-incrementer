@@ -1,31 +1,55 @@
 const fylrUrl = process.argv[2];
-const accessToken = process.argv[3];
+const username = process.argv[3];
+const password = process.argv[4];
+const clientId = process.argv[5];
+const clientSecret = process.argv[6];
 
 async function start() {
     try {
-        if (await isIndexerBusy()) throw 'Initializing not possible during active indexing process';
+        const accessToken = await fetchAccessToken();
 
-        const configuration = await getPluginConfiguration();
-        const incrementerMap = await buildIncrementerMap(configuration);
-        await saveIncrementerMap(incrementerMap, configuration);
+        if (await isIndexerBusy(accessToken)) throw 'Initializing not possible during active indexing process';
+
+        const configuration = await getPluginConfiguration(accessToken);
+        const incrementerMap = await buildIncrementerMap(configuration, accessToken);
+        await saveIncrementerMap(incrementerMap, configuration, accessToken);
     } catch (err) {
         console.error(err);
     }
 }
 
-async function getPluginConfiguration() {
-    const configuration = await getConfiguration();
+async function getPluginConfiguration(accessToken) {
+    const configuration = await getConfiguration(accessToken);
     return configuration.BaseConfigList.find(section => section.Name === 'numericIdAutoIncrementer').Values;
 }
 
-async function getConfiguration() {
+async function getConfiguration(accessToken) {
     const url = fylrUrl + '/inspect/config?access_token=' + accessToken;
     const headers = { 'Accept': 'application/json' };
 
     return (await fetch(url, { headers })).json();
 }
 
-async function buildIncrementerMap(configuration) {
+async function fetchAccessToken() {
+    const url = fylrUrl + '/api/oauth2/token';
+
+    const requestBody = new URLSearchParams({
+        grant_type: 'password',
+        scope: 'offline',
+        client_id: clientId,
+        client_secret: clientSecret,
+        username,
+        password
+    });
+
+    const response = await fetch(url, { method: 'POST', body: requestBody });
+    if (!response.ok) throw 'Failed to fetch access token: ' + JSON.stringify(await response.json());
+
+    const result = await response.json();
+    return result.access_token;
+}
+
+async function buildIncrementerMap(configuration, accessToken) {
     const result = {};
 
     for (let incrementerConfiguration of configuration.incrementers.ValueTable) {
@@ -37,7 +61,7 @@ async function buildIncrementerMap(configuration) {
         let offset = 0;
         const batchSize = 1000;
         do {
-            objects = await fetchObjects(objectType, batchSize, offset);
+            objects = await fetchObjects(objectType, batchSize, offset, accessToken);
             offset += batchSize;
 
             for (let object of objects) {
@@ -97,7 +121,7 @@ function updateIdValues(nestedFieldEntries, idFieldName, baseFieldNames, idValue
     }, idValues);
 }
 
-async function saveIncrementerMap(incrementerMap, configuration) {
+async function saveIncrementerMap(incrementerMap, configuration, accessToken) {
     console.log('Saving incrementer objects...');
 
     const incrementerObjectType = configuration.incrementer_object_type.ValueText;
@@ -105,7 +129,7 @@ async function saveIncrementerMap(incrementerMap, configuration) {
     const incrementerValuesFieldName = configuration.incrementer_values_field_name.ValueText;
     const incrementerMask = configuration.incrementer_mask.ValueText;
 
-    const incrementers = await fetchObjects(incrementerObjectType, 1000, 0);
+    const incrementers = await fetchObjects(incrementerObjectType, 1000, 0, accessToken);
     
     for (let incrementerId of Object.keys(incrementerMap)) {
         let incrementer = incrementers.find(existingIncrementer => {
@@ -122,11 +146,11 @@ async function saveIncrementerMap(incrementerMap, configuration) {
         }
 
         incrementer[incrementerObjectType][incrementerValuesFieldName] = JSON.stringify(incrementerMap[incrementerId]);
-        await saveObject(incrementer);
+        await saveObject(incrementer, accessToken);
     }
 }
 
-async function fetchObjects(objectType, limit, offset) {
+async function fetchObjects(objectType, limit, offset, accessToken) {
     const url = fylrUrl + '/api/v1/db/' + objectType + '/_all_fields/list?limit=' + limit
         + '&offset=' + offset + '&access_token=' + accessToken;
 
@@ -137,12 +161,12 @@ async function fetchObjects(objectType, limit, offset) {
     return objects.filter(object => object._latest_version && !object._latest_version_deleted_at);
 }
 
-async function isIndexerBusy() {
-    const systemStatusData = await getSystemStatusData();
+async function isIndexerBusy(accessToken) {
+    const systemStatusData = await getSystemStatusData(accessToken);
     return systemStatusData.Stats.total_not_indexed > 0;
 }
 
-async function getSystemStatusData() {
+async function getSystemStatusData(accessToken) {
     const response = await fetch(fylrUrl + '/inspect/system/status?access_token=' + accessToken, {
         method: 'GET',
         headers: {
@@ -150,10 +174,12 @@ async function getSystemStatusData() {
         }
     });
 
+    if (!response.ok) throw 'Failed to retrieve system status data: ' + JSON.stringify(await response.json());
+
     try {
         return await response.json();
     } catch (err) {
-        throw 'Failed to retrieve system status data. Please check the access token.';
+        throw 'Failed to retrieve system status data.';
     }
 }
 
@@ -209,7 +235,7 @@ function isEmptyObject(fieldValue) {
         && !Object.keys(fieldValue).length;
 }
 
-async function saveObject(object) {
+async function saveObject(object, accessToken) {
     const url = fylrUrl + '/api/v1/db/' + object._objecttype + '?access_token=' + accessToken;
 
     const data = object[object._objecttype];
