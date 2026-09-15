@@ -91,6 +91,7 @@ async function addId(incrementerId, incrementerObjectType, nestedField, idFieldN
         || !baseFieldNames
         || baseFieldNames.find(baseFieldName => !getBaseFieldValue(nestedField, baseFieldName))
         || nestedField[idFieldName]
+        || nestedField[idFieldName] === 0
         || nestedField._uuid) return false;
 
     nestedField[idFieldName] = await getIdValue(incrementerId, incrementerObjectType, nestedField, baseFieldNames, configuration);
