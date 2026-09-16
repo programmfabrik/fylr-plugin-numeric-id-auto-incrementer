@@ -1,0 +1,16 @@
+server:
+  install:
+  - l10n/numeric-id-auto-incrementer.csv
+  bundles:
+    - out: server/setIds.js
+      sources:
+      - src/server/setIds.js
+      - src/server/checkWorkflows.js
+webfrontend:
+  bundles:
+    - out: webfrontend/numeric-id-auto-incrementer.js
+      sources:
+      - src/webfrontend/baseConfig/objectTypeSelector.js
+
+zip_aliases:
+- NumericIdAutoIncrementer.zip
