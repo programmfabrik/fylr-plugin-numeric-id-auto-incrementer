@@ -43,11 +43,18 @@ async function processObject(object, configuration) {
     let changed = false;
 
     for (let incrementerConfiguration of incrementerConfigurations) {
-        if (!isConfiguredObjectType(object, incrementerConfiguration) || !isInConfiguredPool(object, incrementerConfiguration)) continue;
+        if (!isConfiguredObjectType(object, incrementerConfiguration)
+            || !isInConfiguredPool(object, incrementerConfiguration)
+            || !hasConfiguredTag(object, incrementerConfiguration)) continue;
         if (await processNestedFields(object, incrementerConfiguration, configuration, configuration.incrementer_object_type)) changed = true;
     }
 
     return changed;
+}
+
+function isConfiguredObjectType(object, incrementerConfiguration) {
+    return incrementerConfiguration.object_types.map(objectType => objectType.name)
+        .includes(object._objecttype);
 }
 
 function isInConfiguredPool(object, incrementerConfiguration) {
@@ -63,9 +70,11 @@ function isInConfiguredPool(object, incrementerConfiguration) {
     return false;
 }
 
-function isConfiguredObjectType(object, incrementerConfiguration) {
-    return incrementerConfiguration.object_types.map(objectType => objectType.name)
-        .includes(object._objecttype);
+function hasConfiguredTag(object, incrementerConfiguration) {
+    if (!incrementerConfiguration.tag_id) return true;
+
+    const tagIds = object._tags?.map(tag => tag._id) ?? [];
+    return tagIds.includes(incrementerConfiguration.tag_id);
 }
 
 async function processNestedFields(object, incrementerConfiguration, configuration, incrementerObjectType) {

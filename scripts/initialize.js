@@ -67,7 +67,9 @@ async function buildIncrementerMap(configuration, accessToken) {
             for (let object of objects) {
                 console.log(objectType + ' ' +  object[objectType]._id);
                 for (let incrementerConfiguration of configuration.incrementers.ValueTable) {
-                    if (!isAllowedObjectType(objectType, incrementerConfiguration) || !isInAllowedPool(object, incrementerConfiguration)) {
+                    if (!isAllowedObjectType(objectType, incrementerConfiguration)
+                            || !isInAllowedPool(object, incrementerConfiguration)
+                            || !hasConfiguredTag(object, incrementerConfiguration)) {
                         continue;
                     }
 
@@ -86,7 +88,7 @@ async function buildIncrementerMap(configuration, accessToken) {
 }
 
 function isAllowedObjectType(objectType, incrementerConfiguration) {
-    return incrementerConfiguration.object_types.ValueTable.map(objectType => objectType.name.ValueText).includes(objectType)
+    return incrementerConfiguration.object_types.ValueTable.map(objectType => objectType.name.ValueText).includes(objectType);
 }
 
 function isInAllowedPool(object, incrementerConfiguration) {
@@ -94,6 +96,13 @@ function isInAllowedPool(object, incrementerConfiguration) {
     
     const allowedPoolIds = incrementerConfiguration.pool_ids.ValueTable.map(entry => parseInt(entry.pool_id.ValueText));
     return object[object._objecttype]._pool?._path.find(pool => allowedPoolIds.includes(pool.pool._id));
+}
+
+function hasConfiguredTag(object, incrementerConfiguration) {
+    if (!incrementerConfiguration.tag_id) return true;
+
+    const tagIds = object._tags?.map(tag => tag._id) ?? [];
+    return tagIds.includes(incrementerConfiguration.tag_id);
 }
 
 function getObjectTypes(configuration) {

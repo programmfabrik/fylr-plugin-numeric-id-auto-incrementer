@@ -67,6 +67,9 @@ base_config:
                 type: text
                 position: 0
             position: 5
+          - name: tag_id
+            type: int
+            position: 6
         position: 5
 
 callbacks:

@@ -12,3 +12,4 @@ server.config.parameter.system.numericIdAutoIncrementer.incrementers.field_path.
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.id_field_name.label,Name des ID-Feldes,ID field name
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.base_fields.label,Namen der Basisfelder,Base field names
 server.config.parameter.system.numericIdAutoIncrementer.incrementers.pool_ids.label,IDs der berücksichtigten Pools,IDs of pools to consider
+server.config.parameter.system.numericIdAutoIncrementer.incrementers.tag_id.label,Tag-ID (für Prüfung auf Tag),Tag ID (for tag check)
